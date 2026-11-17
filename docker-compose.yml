@@ -6,6 +6,12 @@ services:
       MYSQL_DATABASE: caso8_reparaciones
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_ROOT_PASSWORD}\" mysql -h 127.0.0.1 -u root -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     restart: unless-stopped
 
   phpmyadmin:
@@ -17,6 +23,21 @@ services:
       - "8090:80"
     depends_on:
       - db
+    restart: unless-stopped
+
+  app:
+    build: .
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: caso8_reparaciones
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8501:8501"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
