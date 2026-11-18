@@ -5,6 +5,7 @@ from services.resumen_service import DatabaseUnavailable, obtener_resumen
 from services import operaciones_service as svc
 from services import seguridad_service as seguridad
 from db import operaciones_dao as dao
+from dashboard import mostrar_dashboard
 
 st.set_page_config(page_title="Caso 8 | Reparaciones", page_icon="🔧", layout="wide")
 st.title("🔧 Sistema de Gestión de Reparaciones")
@@ -56,8 +57,8 @@ def cargar(dao_fn, *args):
         st.error(str(exc))
         return []
 
-inicio, ordenes, equipos_tab, repuestos_tab = st.tabs(
-    ["Inicio · Video 6", "Registrar orden", "CRUD EQUIPO", "CRUD REPUESTO"]
+inicio, ordenes, equipos_tab, repuestos_tab, dashboard_tab = st.tabs(
+    ["Inicio · Video 6", "Registrar orden", "CRUD EQUIPO", "CRUD REPUESTO", "Dashboard · Video 8.2"]
 )
 with inicio:
     st.subheader('Conectividad y resumen (Video 6)')
@@ -202,4 +203,7 @@ with repuestos_tab:
         st.caption("Solo lectura. El rol Consulta no permite modificar repuestos.")
 
 st.divider()
-st.caption("Video 8: control de usuarios implementado; dashboard pendiente.")
+with dashboard_tab:
+    mostrar_dashboard(actor_id)
+
+st.caption("Video 8.2: dashboard P1-P4; D07 y D11 sujetos a ratificación.")
