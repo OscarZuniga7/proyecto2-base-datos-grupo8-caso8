@@ -2,3 +2,4 @@ streamlit>=1.40,<2
 SQLAlchemy>=2.0,<2.1
 PyMySQL>=1.1,<2
 cryptography>=43,<47
+bcrypt>=4.2,<5

@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from db.connection import get_engine
 from db import operaciones_dao as dao
+from services.seguridad_service import exigir_administrador, AccesoDenegado
 
 
 class ErrorNegocio(Exception):
@@ -18,10 +19,11 @@ def consultar(funcion, *args):
         raise ErrorNegocio('No fue posible consultar MySQL. Revise los registros de app y db.') from exc
 
 
-def ejecutar(funcion, *args):
+def ejecutar(funcion, *args, actor_id=None):
     try:
         # engine.begin confirma automáticamente; si falla ejecuta ROLLBACK.
         with get_engine().begin() as conn:
+            exigir_administrador(conn, actor_id)
             return funcion(conn, *args)
     except IntegrityError as exc:
         raise ErrorNegocio('Operación rechazada: clave duplicada o registro relacionado por FK. No se modificaron datos.') from exc
@@ -36,7 +38,7 @@ def _texto(valor, nombre, maximo=None):
     return s
 
 
-def registrar_orden(id_cliente,codigo_interno,codigo_sucursal,fecha_recepcion,fecha_comprometida,problema,estado):
+def registrar_orden(id_cliente,codigo_interno,codigo_sucursal,fecha_recepcion,fecha_comprometida,problema,estado, *, actor_id=None):
     datos = dict(id_cliente=_texto(id_cliente,'Cliente',30),codigo_interno=_texto(codigo_interno,'Equipo',30),
       codigo_sucursal=_texto(codigo_sucursal,'Sucursal',20),fecha_recepcion=fecha_recepcion,
       fecha_comprometida=fecha_comprometida,problema_informado=_texto(problema,'Problema'),
@@ -52,7 +54,7 @@ def registrar_orden(id_cliente,codigo_interno,codigo_sucursal,fecha_recepcion,fe
         if estado not in dao.estados_existentes(conn):
             raise ErrorNegocio('El estado no figura entre los estados ya usados en la base.')
         return dao.crear_orden(conn,datos)
-    return ejecutar(operacion)
+    return ejecutar(operacion, actor_id=actor_id)
 
 
 def datos_equipo(codigo,id_cliente,marca,modelo,serie,compra,conservacion):
@@ -62,18 +64,18 @@ def datos_equipo(codigo,id_cliente,marca,modelo,serie,compra,conservacion):
       estado_conservacion=_texto(conservacion,'Conservación',100))
 
 
-def crear_equipo(**datos):
-    return ejecutar(dao.crear_equipo, datos)
+def crear_equipo(*, actor_id=None, **datos):
+    return ejecutar(dao.crear_equipo, datos, actor_id=actor_id)
 
 
-def actualizar_equipo(codigo, **datos):
-    n = ejecutar(dao.modificar_equipo,codigo,datos)
+def actualizar_equipo(codigo, *, actor_id=None, **datos):
+    n = ejecutar(dao.modificar_equipo,codigo,datos, actor_id=actor_id)
     if n == 0: raise ErrorNegocio('Equipo no encontrado o sin cambios.')
     return n
 
 
-def borrar_equipo(codigo):
-    n = ejecutar(dao.eliminar_equipo,codigo)
+def borrar_equipo(codigo, *, actor_id=None):
+    n = ejecutar(dao.eliminar_equipo,codigo, actor_id=actor_id)
     if n == 0: raise ErrorNegocio('Equipo no encontrado.')
     return n
 
@@ -86,17 +88,17 @@ def datos_repuesto(tipo,precio,disponibilidad):
     return dict(tipo=tipo,precio_referencia=precio,disponibilidad=int(disponibilidad))
 
 
-def crear_repuesto(**datos):
-    return ejecutar(dao.crear_repuesto,datos)
+def crear_repuesto(*, actor_id=None, **datos):
+    return ejecutar(dao.crear_repuesto,datos, actor_id=actor_id)
 
 
-def actualizar_repuesto(numero,**datos):
-    n = ejecutar(dao.modificar_repuesto,numero,datos)
+def actualizar_repuesto(numero, *, actor_id=None, **datos):
+    n = ejecutar(dao.modificar_repuesto,numero,datos, actor_id=actor_id)
     if n == 0: raise ErrorNegocio('Repuesto no encontrado o sin cambios.')
     return n
 
 
-def borrar_repuesto(numero):
-    n = ejecutar(dao.eliminar_repuesto,numero)
+def borrar_repuesto(numero, *, actor_id=None):
+    n = ejecutar(dao.eliminar_repuesto,numero, actor_id=actor_id)
     if n == 0: raise ErrorNegocio('Repuesto no encontrado.')
     return n
